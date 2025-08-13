@@ -102,7 +102,6 @@ if args.superuser:
         print("--username and --password are required for superuser creation.")
     else:
         create_superuser(args.username, args.password)
-        print(f"Superuser '{args.username}' created.")
 
 if args.customers > 0:
     generate_customers(args.customers)

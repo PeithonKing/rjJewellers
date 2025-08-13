@@ -1,1 +1,5 @@
 staticfiles
+*.sqlite3
+secret_key
+app/migrations/*
+!app/migrations/__init__.py

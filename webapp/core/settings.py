@@ -33,9 +33,10 @@ else:
         f.write(SECRET_KEY)
 
 assert SECRET_KEY, "Secret key not found."
+print(SECRET_KEY)
 
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = ["*"]
 
 
 
