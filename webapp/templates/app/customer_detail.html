@@ -1,0 +1,189 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Customer Info{% endblock %}
+{% block extra_css %}
+<style>
+    .fire-action {
+        transition: transform 0.15s cubic-bezier(0.4,0,0.2,1);
+        display: inline-block;
+    }
+    .fire-action:hover {
+        transform: scale(1.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="customer-header">
+    <h1 class="mb-3 d-flex align-items-center">
+        {{ customer.name }}
+        <a href="/admin/app/customer/{{ customer.cid }}/change/"
+            class="ms-3 text-decoration-none text-secondary align-self-center" title="Edit Customer"
+            style="font-size:1.5rem;">
+            <i class="bi bi-pencil-square"></i>
+        </a>
+    </h1>
+    <p><strong>ID:</strong> {{ customer.cid }}</p>
+    <p><strong>Phone Number:</strong> {{ customer.phone_number }}</p>
+    <p><strong>Total Loyalty Points:</strong> {{ loyalty_points }}</p>
+    <p><strong>Total Referral Points:</strong> {{ referral_points }}</p>
+</div>
+
+<ul class="nav nav-tabs mt-4" id="customerTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="invoices-tab" data-bs-toggle="tab" data-bs-target="#invoices" type="button" role="tab" aria-controls="invoices" aria-selected="true">Customer Invoices</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="referred-tab" data-bs-toggle="tab" data-bs-target="#referred" type="button" role="tab" aria-controls="referred" aria-selected="false">Referred Invoices</button>
+  </li>
+</ul>
+<div class="tab-content" id="customerTabsContent">
+  <div class="tab-pane fade show active" id="invoices" role="tabpanel" aria-labelledby="invoices-tab">
+    {% if customers_invoices %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover invoice-table mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>Invoice ID</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Items</th>
+                    <th>Loyalty</th>
+                    <th>Reference</th>
+                    <th>Edit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in customers_invoices %}
+                <tr>
+                    <td>{{ invoice.iid }}</td>
+                    <td>{{ invoice.date }}</td>
+                    <td>{{ invoice.total_amount }}</td>
+                    <td>{{ invoice.items|default:"N/A" }}</td>
+
+                    <td>
+                        <span style="
+                            {% if invoice.loyalty_points_status == 'active' %}
+                            color: #217a3b; font-weight: bold;
+                            {% elif invoice.loyalty_points_status == 'claimed' %}
+                            color: #b02a37; font-weight: bold;
+                            {% elif invoice.loyalty_points_status == 'expired' %}
+                            color: #888888; font-weight: bold;
+                            {% endif %}
+                        ">
+                            {{ invoice.loyalty_points }} (till {{ invoice.loyalty_expiration_date|date:"jS M Y" }})
+                            {% if invoice.loyalty_points_status == 'active' %}
+                                <a class="fire-action" title="Mark Loyalty Claimed" style="cursor:pointer; margin-left:4px; text-decoration: none;"
+                                    href="/loyalty_mark_claimed/{{ invoice.iid }}"
+                                    onclick="return confirm('Do you really want to mark this loyalty claimed?');">
+                                    🔥
+                                </a>
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <td>
+                    {% if invoice.referral_points is None %}
+                        <span>No Reference</span>
+                    {% else %}
+                        <span style="
+                        {% if invoice.referral_points_status == 'active' %}
+                            color: #217a3b; font-weight: bold;
+                        {% elif invoice.referral_points_status == 'claimed' %}
+                            color: #b02a37; font-weight: bold;
+                        {% elif invoice.referral_points_status == 'expired' %}
+                            color: #888888; font-weight: bold;
+                        {% endif %}
+                        ">
+                        {{ invoice.referral_points }} (till {{ invoice.referral_expiration_date|date:"jS M Y" }}) by
+                        <a href="/customer/{{ invoice.referrer.cid }}/" style="text-decoration: underline; color: inherit;">
+                            {{ invoice.referrer.name }}
+                        </a>
+                        </span>
+                    {% endif %}
+                    </td>
+
+                    <td class="text-center">
+                        <a href="/admin/app/invoice/{{ invoice.iid }}/change/"
+                            class="text-decoration-none text-secondary" title="Edit Invoice" style="font-size:1.3rem;">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No invoices found for this customer.</p>
+    {% endif %}
+  </div>
+  <div class="tab-pane fade" id="referred" role="tabpanel" aria-labelledby="referred-tab">
+    {% if referred_invoices %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover invoice-table mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>Invoice ID</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Points</th>
+                    <th>Referree</th>
+                    <th>Edit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in referred_invoices %}
+                <tr>
+                    <td>{{ invoice.iid }}</td>
+                    <td>{{ invoice.date }}</td>
+                    <td>{{ invoice.total_amount }}</td>
+                    <td>
+                        <span style="
+                            {% if invoice.referral_points_status == 'active' %}
+                                color: #217a3b; font-weight: bold;
+                            {% elif invoice.referral_points_status == 'claimed' %}
+                                color: #b02a37; font-weight: bold;
+                            {% elif invoice.referral_points_status == 'expired' %}
+                                color: #888888; font-weight: bold;
+                            {% endif %}
+                        ">
+                            {{ invoice.referral_points }} (till {{ invoice.referral_expiration_date|date:"jS M Y" }}) 
+                            
+
+                            {% if invoice.referral_points_status == 'active' %}
+                                <a class="fire-action" title="Mark Referral Claimed" style="cursor:pointer; margin-left:4px; text-decoration: none;"
+                                    href="/referral_mark_claimed/{{ invoice.iid }}"
+                                    onclick="return confirm('Do you really want to mark this referral claimed?');">
+                                    🔥
+                                </a>
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/customer/{{ invoice.customer.cid }}/" style="text-decoration: underline; color: inherit;">
+                            {{ invoice.customer.name }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <a href="/admin/app/invoice/{{ invoice.iid }}/change/"
+                            class="text-decoration-none text-secondary" title="Edit Invoice" style="font-size:1.3rem;">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No referred invoices found for this customer.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}{% endblock %}

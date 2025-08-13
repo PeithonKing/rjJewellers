@@ -1,0 +1,116 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Sales Analytics{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
+<style>
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+</style>
+{% endblock %}
+
+
+
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Sales Analytics</h2>
+    
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date" id="startDate" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date" id="endDate" class="form-control">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleMetric">
+                <label class="form-check-label" for="toggleMetric" id="toggleLabel">Sales Amount</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div id="chart" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+{% block extra_js %}
+<script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
+
+<script>
+let chartData = null;
+let currentMetric = 'amount'; // 'amount' or 'number'
+let uplotInstance = null;
+
+function fetchData() {
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    fetch(`/api/sales?start=${start}&end=${end}`)
+        .then(res => res.json())
+        .then(data => {
+            chartData = data;
+            drawChart();
+        });
+}
+
+function drawChart() {
+    const labels = chartData.labels.map(d => new Date(d).getTime() / 1000);
+    const total = currentMetric === 'amount' ? chartData.sales_amount : chartData.sales_number;
+    const referred = currentMetric === 'amount' ? chartData.referred_sales_amount : chartData.referred_sales_number;
+
+    const opts = {
+        title: `Daily Sales (${currentMetric})`,
+        width: document.getElementById('chart').offsetWidth,
+        height: 400,
+        scales: { x: { time: true } },
+        series: [
+            {},
+            { label: "Total", stroke: "blue", fill: "rgba(0,0,255,0.3)" },
+            { label: "Referred", stroke: "orange", fill: "rgba(255,165,0,0.3)" }
+        ],
+        cursor: { drag: { x: true, y: false } },
+        padding: [null, null, null, 60] // top, right, bottom, left (increase left padding)
+    };
+
+    const data = [labels, total, referred];
+    
+    if (uplotInstance) {
+        uplotInstance.destroy();
+    }
+    uplotInstance = new uPlot(opts, data, document.getElementById('chart'));
+}
+
+document.getElementById('startDate').addEventListener('change', fetchData);
+document.getElementById('endDate').addEventListener('change', fetchData);
+document.getElementById('toggleMetric').addEventListener('change', e => {
+    currentMetric = e.target.checked ? 'number' : 'amount';
+    document.getElementById('toggleLabel').innerText = currentMetric === 'amount' ? 'Sales Amount' : 'Sales Number';
+    if (chartData) drawChart();
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+    document.getElementById('startDate').value = thirtyDaysAgo;
+    document.getElementById('endDate').value = today;
+    fetchData();
+});
+</script>
+{% endblock %}

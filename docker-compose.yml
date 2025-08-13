@@ -1,0 +1,27 @@
+services:
+  webapp:
+    container_name: webapp
+    build:
+      context: ./webapp
+    restart: unless-stopped
+    ports:
+      - "${PORT}:8000"
+    volumes:
+      - ./webapp:/app
+    environment:
+      SUPERUSER_USERNAME: ${SUPERUSER_USERNAME}
+      SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD}
+      # PORT: ${PORT}
+      # # Add more env vars here if needed, e.g.
+      # DJANGO_DEBUG: "False"
+      # ALLOWED_HOSTS: "localhost,127.0.0.1"
+      # SECRET_KEY: "your_secret_key_here"
+
+  db_backup:
+    image: alpine:latest
+    container_name: db_backup
+    volumes:
+      - ./webapp:/app
+      - ./backups:/backups
+    entrypoint: sh -c "while true; do cp /app/db.sqlite3 /backups/db-$(date +'%d%m%Y-%s').sqlite3; sleep 7200; done"
+

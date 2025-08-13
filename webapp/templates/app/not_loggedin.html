@@ -1,0 +1,36 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Not Logged In{% endblock %}
+{% block extra_css %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+	<div class="text-center">
+		<h1>👋 Welcome!</h1>
+		<p class="lead">It seems you are <strong>not logged in</strong>...<br>
+		Unfortunately, nothing can be done unless you login as an <strong>admin user</strong>.<br>
+		Please visit <a href="/admin">the admin portal</a> to login.<br>
+		<br>
+		You will be automatically redirected to the login page in <span id="countdown">10</span> seconds.</p>
+	</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+	let seconds = 10;
+	const countdown = document.getElementById('countdown');
+	const contentDiv = document.querySelector('.d-flex.justify-content-center.align-items-center');
+	const interval = setInterval(() => {
+		seconds--;
+		if (countdown) countdown.textContent = seconds;
+		if (seconds === 1 && contentDiv) {
+			contentDiv.innerHTML = '<div class="w-100 text-center"><span style="font-size:7rem;font-weight:bold;">👋 BYE! ❤️</span></div>';
+		}
+		if (seconds <= 0) {
+			clearInterval(interval);
+			window.location.href = '/admin';
+		}
+	}, 1000);
+</script>
+{% endblock %}
